@@ -56,7 +56,7 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
   Point _getPixelFromCluster(MarkerClusterNode cluster, [LatLng customPoint]) {
     final pos = _getPixelFromPoint(customPoint ?? cluster.point);
 
-    Size size = getClusterSize(cluster);
+    Size size = getClusterNodeSize(cluster);
     Anchor anchor =
         Anchor.forPos(widget.options.anchor, size.width, size.height);
 
@@ -244,7 +244,9 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
 
     List<Widget> results = [];
 
-    Size size = getClusterSize(cluster);
+    List<Marker> clusterMarkers = getClusterMarkers(cluster);
+    Size size = getClusterSize(clusterMarkers);
+    if (widget.options.onCluster) widget.options.onCluster(clusterMarkers);
 
     results.add(
       AnimatedBuilder(
@@ -254,7 +256,7 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
           onTap: _onClusterTap(cluster),
           child: widget.options.builder(
             context,
-            cluster.markers.map((node) => node.marker).toList(),
+            clusterMarkers,
           ),
         ),
         builder: (BuildContext context, Widget child) {
@@ -290,10 +292,15 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
   List<Marker> getClusterMarkers(MarkerClusterNode cluster) =>
       cluster.markers.map((node) => node.marker).toList();
 
-  Size getClusterSize(MarkerClusterNode cluster) =>
+  Size getClusterNodeSize(MarkerClusterNode clusterMarkers) =>
       widget.options?.computeSize == null
           ? widget.options.size
           : widget.options.computeSize(getClusterMarkers(cluster));
+
+  Size getClusterSize(List<Marker> clusterMarkers) =>
+      widget.options?.computeSize == null
+          ? widget.options.size
+          : widget.options.computeSize(clusterMarkers);
 
   Widget _buildCluster(MarkerClusterNode cluster,
       [FadeType fade = FadeType.None,
@@ -308,7 +315,9 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
     Animation<Point> translateAnimation =
         _translateAnimation(_zoomController, translate, pos, newPos);
 
-    Size size = getClusterSize(cluster);
+    List<Marker> clusterMarkers = getClusterMarkers(markers);
+    Size size = getClusterSize(clusterMarkers);
+    if (widget.options.onCluster) widget.options.onCluster(clusterMarkers);
 
     return AnimatedBuilder(
       animation: _zoomController,
@@ -317,7 +326,7 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
         onTap: _onClusterTap(cluster),
         child: widget.options.builder(
           context,
-          getClusterMarkers(cluster),
+          clusterMarkers,
         ),
       ),
       builder: (BuildContext context, Widget child) {
@@ -384,7 +393,7 @@ class _MarkerClusterLayerState extends State<MarkerClusterLayer>
   bool _boundsContainsCluster(MarkerClusterNode cluster) {
     var pixelPoint = widget.map.project(cluster.point);
 
-    Size size = getClusterSize(cluster);
+    Size size = getClusterNodeSize(cluster);
     Anchor anchor =
         Anchor.forPos(widget.options.anchor, size.width, size.height);
 
